@@ -186,8 +186,7 @@ class Scene:
         o_w_euvw: float = - context["distance_to_plane"]
         o = o_u_euvw * context["u"] + o_v_euvw * context["v"] + o_w_euvw * context["w"] + self.eye_position
         
-        # TODO: we have two possible direction if orthographic or perspective
-        #       for the moment we will admit we only do the orthohraphic one
+        # we have two possible directions if orthographic or perspective
         direction = glm.normalize(o - self.eye_position) if PERSPECTIVE else -context["w"]
 
         return hc.Ray(o, direction)
