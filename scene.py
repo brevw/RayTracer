@@ -26,7 +26,8 @@ class Scene:
                  lights: list[hc.Light],
                  objects: list[geom.Geometry],
                  aperture_size: float,
-                 focal_distance: float
+                 focal_distance: float,
+                 depth: int
                  ):
         self.width = width  # width of image
         self.height = height  # height of image
@@ -44,6 +45,9 @@ class Scene:
         # params used for depth of field 
         self.aperture_size = aperture_size # to simulate lens 
         self.focal_distance = focal_distance  # Plane in which everything is in focus
+
+        # for mirror reflection
+        self.depth = depth
 
     def render(self):
         image = np.zeros((self.height, self.width, 3)) # image with row,col indices and 3 channels, origin is top left
@@ -70,13 +74,17 @@ class Scene:
         for sub_pixel_i in range(self.samples): 
             for sub_pixel_j in range(self.samples):
                 r = self.generate_ray(i, j, sub_pixel_i, sub_pixel_j, context)
-                color += self.trace_ray(r)
+                color += self.trace_ray(r, self.depth)
         return color / (self.samples * self.samples)
 
-    def trace_ray(self, ray: hc.Ray) -> glm.vec3:
+    def trace_ray(self, ray: hc.Ray, depth: int) -> glm.vec3:
         """
         Trace a ray through the scene and compute the color at the intersection.
         """
+        # Base Case 
+        if depth <= 0: 
+            return NOTHING_COLOR()
+
         # Test for intersection with all objects
         intersection = hc.Intersection.default()
         for obj in self.objects:
@@ -84,7 +92,16 @@ class Scene:
 
         # Perform shading computations on the intersection point
         if intersection.t < INF:
-            return self.shade(intersection)
+            base_color = self.shade(intersection)
+            if intersection.mat.reflection_intensity <= 0: 
+                return base_color
+            reflected_direction = 2 * glm.dot(intersection.normal, -ray.direction) * intersection.normal + ray.direction
+            reflected_ray = hc.Ray(intersection.position + 1e-4 * intersection.normal, reflected_direction)
+
+            # Compute reflected color 
+            reflected_color = self.trace_ray(reflected_ray, depth - 1)
+            return glm.mix(base_color, reflected_color, intersection.mat.reflection_intensity)
+
         return NOTHING_COLOR()
 
     def shade(self, intersection: hc.Intersection) -> glm.vec3:

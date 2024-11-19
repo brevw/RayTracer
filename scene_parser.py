@@ -42,6 +42,9 @@ def load_scene(infile: str):
     # DOF options
     aperture_size = data.get("aperture_size", 0.0) # defaults to no DOF
     focal_distance = data.get("focal_distance", 2.0) # defaults to two
+
+    # max depth for reflection 
+    depth = data.get("depth", 3) # max depth by default is 3
     
     # Loading scene lights
     lights = []    
@@ -70,7 +73,8 @@ def load_scene(infile: str):
         mat_diffuse = make_vec3(material["diffuse"])
         mat_specular = make_vec3(material["specular"])
         mat_shininess = 0 if "shininess" not in material else material["shininess"]
-        material_by_name[mat_name] = hc.Material(mat_name, mat_diffuse, mat_specular, mat_shininess)
+        reflection_intensity = 0 if "reflection_intensity" not in material else material["reflection_intensity"]
+        material_by_name[mat_name] = hc.Material(mat_name, mat_diffuse, mat_specular, mat_shininess, reflection_intensity)
 
     # load geometires
     objects = [] # list of loaded object geometries and hierarchy roots
@@ -84,7 +88,10 @@ def load_scene(infile: str):
     return scene.Scene(width, height, jitter, samples,  # General settings
                 cam_pos, cam_lookat, cam_up, cam_fov,  # Camera settings
                 ambient, lights,  # Light settings
-                objects, aperture_size, focal_distance)  # Geometries to render
+                objects, # Geometries to render
+                aperture_size, focal_distance, # DOF
+                depth # for Reflections
+                )
 
 def load_geometry( geometry, material_by_name, geometry_by_name ):
 

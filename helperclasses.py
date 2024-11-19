@@ -12,11 +12,12 @@ class Ray:
         return self.origin + self.direction * t
 
 class Material:
-    def __init__(self, name: str, diffuse: glm.vec3, specular: glm.vec3, shininess: float):
+    def __init__(self, name: str, diffuse: glm.vec3, specular: glm.vec3, shininess: float, reflection_intensity: float):
         self.name = name
         self.diffuse = diffuse      # kd diffuse coefficient
         self.specular = specular    # ks specular coefficient
-        self.shininess = shininess  # specular exponent        
+        self.shininess = shininess  # specular exponent    
+        self.reflection_intensity = reflection_intensity    
 
 class Light:
     def __init__(self, ltype: str, name: str, colour: glm.vec3, vector: glm.vec3, attenuation: glm.vec3):
