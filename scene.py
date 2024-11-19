@@ -25,8 +25,8 @@ class Scene:
                  ambient: glm.vec3,
                  lights: list[hc.Light],
                  objects: list[geom.Geometry],
-                 aperture_size: float = 0,
-                 focal_distance: float = 0
+                 aperture_size: float,
+                 focal_distance: float
                  ):
         self.width = width  # width of image
         self.height = height  # height of image
@@ -42,8 +42,8 @@ class Scene:
         self.objects = objects  # all objects in the scene
 
         # params used for depth of field 
-        self.aperture_size = aperture_size
-        self.focal_distance = focal_distance
+        self.aperture_size = aperture_size # to simulate lens 
+        self.focal_distance = focal_distance  # Plane in which everything is in focus
 
     def render(self):
         image = np.zeros((self.height, self.width, 3)) # image with row,col indices and 3 channels, origin is top left
@@ -168,7 +168,7 @@ class Scene:
             'distance_to_plane': distance_to_plane
         }
 
-    def generate_ray(self, i: int, j: int, sub_pixel_i: int, sub_pixel_j: int, context: dict) -> hc.Ray: 
+    def generate_ray(self, i: int, j: int, sub_pixel_i: int, sub_pixel_j: int, context: dict, use_DOF: bool = False) -> hc.Ray: 
         """
         Generate a ray for a given pixel and subpixel indices.
         """
@@ -184,9 +184,28 @@ class Scene:
         o_u_euvw: float = context["left"]   + context["const_pixel_width"] * i + offset_x
         o_v_euvw: float = context["bottom"] + context["const_pixel_height"] * j + offset_y
         o_w_euvw: float = - context["distance_to_plane"]
-        o = o_u_euvw * context["u"] + o_v_euvw * context["v"] + o_w_euvw * context["w"] + self.eye_position
+        ray_origin = o_u_euvw * context["u"] + o_v_euvw * context["v"] + o_w_euvw * context["w"] + self.eye_position
         
         # we have two possible directions if orthographic or perspective
-        direction = glm.normalize(o - self.eye_position) if PERSPECTIVE else -context["w"]
+        ray_direction = glm.normalize(ray_origin - self.eye_position) if PERSPECTIVE else -context["w"]
 
-        return hc.Ray(o, direction)
+        # Applt DOF (Depth of Field) if aperature is non zero 
+        if self.aperture_size > 0.0: 
+            lens_u = random.uniform(-1, 1) * self.aperture_size
+            lens_v = random.uniform(-1, 1) * self.aperture_size
+
+            # Compute focus point the one that lies in the focus plane at fixed distance
+            # this is because the ray  that passes through the middle is not bended
+            w = context["w"]  # Camera's viewing direction
+            denominator = -glm.dot(ray_direction, w)
+            if abs(denominator) > 1e-6:
+                t = self.focal_distance / denominator
+                focus_point = self.eye_position + ray_direction * t
+            else:
+                focus_point = self.eye_position + ray_direction * self.focal_distance
+
+            # ajust ray 
+            ray_origin = ray_origin + lens_u * context["u"] + lens_v * context["v"]
+            ray_direction = glm.normalize(focus_point - ray_origin)
+
+        return hc.Ray(ray_origin, ray_direction)

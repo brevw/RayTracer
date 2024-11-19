@@ -38,6 +38,10 @@ def load_scene(infile: str):
     # Loading Anti-Aliasing options    
     jitter = data.get( "AA_jitter", False ) # default to no jitter
     samples = data.get( "AA_samples", 1 ) # default to no supersampling
+
+    # DOF options
+    aperture_size = data.get("aperture_size", 0.0) # defaults to no DOF
+    focal_distance = data.get("focal_distance", 2.0) # defaults to two
     
     # Loading scene lights
     lights = []    
@@ -80,7 +84,7 @@ def load_scene(infile: str):
     return scene.Scene(width, height, jitter, samples,  # General settings
                 cam_pos, cam_lookat, cam_up, cam_fov,  # Camera settings
                 ambient, lights,  # Light settings
-                objects)  # Geometries to render
+                objects, aperture_size, focal_distance)  # Geometries to render
 
 def load_geometry( geometry, material_by_name, geometry_by_name ):
 
