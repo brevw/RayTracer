@@ -1,5 +1,5 @@
 {
-    "resolution": [640, 640],
+    "resolution": [1280, 720],
     "aperture_size": 0.18,
     "focal_distance": 8,
     "depth": 3,
@@ -82,6 +82,13 @@
             "type": "plane",
             "normal": [1.0, 0.0, 0.0],
             "position": [-11.0, 0.0, -8.0],
+            "materials": ["white"]
+        },
+        {
+            "name": "ground4",
+            "type": "plane",
+            "normal": [0.0, 0.0, 1.0],
+            "position": [0.0, 0.0, 11.0],
             "materials": ["white"]
         },
         {
