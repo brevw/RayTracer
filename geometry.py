@@ -1,21 +1,37 @@
 import helperclasses as hc
 import glm
 import igl
+import random
+import math
 
 USE_PHONG_SHADING = False
 
 class Geometry:
-    def __init__(self, name: str, gtype: str, materials: list[hc.Material]):
+    def __init__(self, name: str, gtype: str, materials: list[hc.Material], samples: int):
         self.name = name
         self.gtype = gtype
         self.materials = materials
+        self.emits_light = False
+        self.samples = samples
+        if materials:
+            for mat in materials:
+                if glm.length(mat.emissive_color) != 0:
+                    self.emits_light = True
+                    break
 
     def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
         return intersect
+    
+    def sample_light(self) -> list[hc.Light]:
+        """
+        Base implementation of light sampling. Should be overridden by derived classes.
+        Returns a list of (point, normal) pairs.
+        """
+        return []
 
 class Sphere(Geometry):
-    def __init__(self, name: str, gtype: str, materials: list[hc.Material], center: glm.vec3, radius: float):
-        super().__init__(name, gtype, materials)
+    def __init__(self, name: str, gtype: str, materials: list[hc.Material], center: glm.vec3, radius: float, samples: int):
+        super().__init__(name, gtype, materials, samples)
         self.center = center
         self.radius = radius
 
@@ -36,11 +52,39 @@ class Sphere(Geometry):
             intersect.position = p + t * d
             intersect.normal = glm.normalize(intersect.position - self.center)
             intersect.mat = self.materials[0] if self.materials else None 
+    def sample_light(self) -> list[hc.Light]:
+        if not self.emits_light:
+            return []
+        light_instances = []
+        material = self.materials[0]
 
+        for _ in range(self.samples):
+            # Generate a random point on the surface of the sphere
+            theta = random.uniform(0, 2 * math.pi) 
+            phi = random.uniform(0, math.pi)  
+            x = self.center.x + self.radius * math.sin(phi) * math.cos(theta)
+            y = self.center.y + self.radius * math.sin(phi) * math.sin(theta)
+            z = self.center.z + self.radius * math.cos(phi)
+            position = glm.vec3(x, y, z)
+
+            # Normal at the point on the sphere
+            normal = glm.normalize(position - self.center)
+
+            # Create a light instance
+            light = hc.Light(
+                l_type="point",  # Approximating as a point light for each sample
+                name=f"{self.name}_light",
+                colour=material.emissive_color,
+                vector=position + 1e-3 * normal,  # Position of the light sample
+                attenuation=glm.vec3(1, 0, 0)  # Example attenuation (could be adjusted)
+            )
+            light_instances.append(light)
+
+        return light_instances
 
 class Plane(Geometry):
-    def __init__(self, name: str, gtype: str, materials: list[hc.Material], point: glm.vec3, normal: glm.vec3):
-        super().__init__(name, gtype, materials)
+    def __init__(self, name: str, gtype: str, materials: list[hc.Material], point: glm.vec3, normal: glm.vec3, samples: int):
+        super().__init__(name, gtype, materials, samples)
         self.point = point
         self.normal = normal
 
@@ -60,12 +104,19 @@ class Plane(Geometry):
             intersect.mat = None if not self.materials else \
                             self.materials[1] if len(self.materials) > 1 and (int(glm.floor(intersect.position.x)) + int(glm.floor(intersect.position.z))) & 1 == 1 else self.materials[0]
 
+    def sample_light(self, num_samples: int) -> list[tuple[glm.vec3, glm.vec3]]:
+        ...
+
 class AABB(Geometry):
-    def __init__(self, name: str, gtype: str, materials: list[hc.Material], minpos: glm.vec3, maxpos: glm.vec3):
+    def __init__(self, name: str, gtype: str, materials: list[hc.Material], minpos: glm.vec3, maxpos: glm.vec3, samples: int):
         # dimension holds information for length of each size of the box
-        super().__init__(name, gtype, materials)
+        # material index: 0: front, 1: back, 2: right, 3: left, 4: top, 5: bottom
+        super().__init__(name, gtype, materials, samples)
         self.minpos = minpos
         self.maxpos = maxpos
+
+    def face_to_mat_index(self, face):
+        return min(face, len(self.materials) - 1)
 
     def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
         p = ray.origin
@@ -118,14 +169,66 @@ class AABB(Geometry):
             intersect.t = t
             intersect.position = p + t * d 
             intersect.normal = normal
-            intersect.mat = self.materials[0] if self.materials else None 
+            if not self.materials:
+                intersect.mat
+            else:
+                face = 0 if normal[2] == 1 else (1 if normal[2] == -1 else (2 if normal[0] == 1 else (3 if normal[0] == -1 else (4 if normal[1] == 1 else 5))))
+            intersect.mat = self.materials[self.face_to_mat_index(face)]
+    def sample_light(self) -> list[tuple[glm.vec3,glm.vec3]]:
+        if not self.emits_light: 
+            return []
 
+        light_instances = []
+
+        # Define face sampling by index
+        faces = {
+            0: {"u": 0, "v": 1, "constant": self.maxpos.z, "normal": glm.vec3(0, 0, 1)},  # Front (+Z)
+            1: {"u": 0, "v": 1, "constant": self.minpos.z, "normal": glm.vec3(0, 0, -1)},  # Back (-Z)
+            2: {"u": 1, "v": 2, "constant": self.maxpos.x, "normal": glm.vec3(1, 0, 0)},  # Right (+X)
+            3: {"u": 1, "v": 2, "constant": self.minpos.x, "normal": glm.vec3(-1, 0, 0)},  # Left (-X)
+            4: {"u": 0, "v": 2, "constant": self.maxpos.y, "normal": glm.vec3(0, 1, 0)},  # Top (+Y)
+            5: {"u": 0, "v": 2, "constant": self.minpos.y, "normal": glm.vec3(0, -1, 0)},  # Bottom (-Y)
+        }
+
+        for face_index, face_data in faces.items():
+            material = self.materials[self.face_to_mat_index(face_index)]
+            if glm.length(material.emissive_color) == 0:
+                continue  # Skip non-emissive faces
+
+            # Sample points on the face
+            for _ in range(self.samples):
+                u_coord = random.uniform(self.minpos[face_data["u"]], self.maxpos[face_data["u"]])
+                v_coord = random.uniform(self.minpos[face_data["v"]], self.maxpos[face_data["v"]])
+
+                # Create a point based on the face
+                point = glm.vec3(0.0)
+                point[face_data["u"]] = u_coord
+                point[face_data["v"]] = v_coord
+
+                # Assign the constant coordinate for the face
+                if face_data["normal"].x != 0:
+                    point.x = face_data["constant"]
+                elif face_data["normal"].y != 0:
+                    point.y = face_data["constant"]
+                elif face_data["normal"].z != 0:
+                    point.z = face_data["constant"]
+
+                # Create a light instance
+                light = hc.Light(
+                    ltype="point", 
+                    name=f"{self.name}_light_{face_index}",
+                    colour=material.emissive_color * material.power / self.samples,
+                    vector= point + 1e-3 * face_data["normal"],
+                    attenuation=glm.vec3(1, 0, 0)
+                )
+                light_instances.append(light)
+        return light_instances
 
 
 class Mesh(Geometry):
     def __init__(self, name: str, gtype: str, materials: list[hc.Material], translate: glm.vec3, scale: float,
-                 filepath: str):
-        super().__init__(name, gtype, materials)
+                 filepath: str, samples: int):
+        super().__init__(name, gtype, materials, samples)
         verts, _, norms, self.faces, _, _ = igl.read_obj(filepath)
         self.verts = []
         self.norms = []
@@ -194,11 +297,12 @@ class Mesh(Geometry):
             self.intersect_triangle(i, ray, intersect)
 
 class Node(Geometry):
-    def __init__(self, name: str, gtype: str, M: glm.mat4, materials: list[hc.Material]):
-        super().__init__(name, gtype, materials)        
+    def __init__(self, name: str, gtype: str, M: glm.mat4, materials: list[hc.Material], samples: int):
+        super().__init__(name, gtype, materials, samples)        
         self.children: list[Geometry] = []
         self.M = M
         self.Minv = glm.inverse(M)
+        self.emits_light = True # alway true easier way to handle this because of the parser
 
     def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
         transformed_ray = hc.Ray((self.Minv * glm.vec4(ray.origin, 1.0)).xyz,
@@ -213,3 +317,10 @@ class Node(Geometry):
                 intersect.normal = glm.normalize(glm.transpose(self.Minv) * glm.vec4(intersect.normal, 0.0)).xyz
                 if not intersect.mat: 
                     intersect.mat = self.materials[0]
+    def sample_light(self) -> list[hc.Light]:
+        l = []
+        for c in self.children:
+            l += c.sample_light()
+        for l_ in l:
+            l_.vector = self.M * l_.vector
+        return l

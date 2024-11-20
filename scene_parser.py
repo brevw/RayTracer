@@ -74,7 +74,10 @@ def load_scene(infile: str):
         mat_specular = make_vec3(material["specular"])
         mat_shininess = 0 if "shininess" not in material else material["shininess"]
         reflection_intensity = 0 if "reflection_intensity" not in material else material["reflection_intensity"]
-        material_by_name[mat_name] = hc.Material(mat_name, mat_diffuse, mat_specular, mat_shininess, reflection_intensity)
+        emissive_color = glm.vec3(0.0, 0.0, 0.0) if "emissive_color" not in material else make_vec3(material["emissive_color"])
+        power = 1 if "power" not in material else material["power"]
+        material_by_name[mat_name] = hc.Material(mat_name, mat_diffuse, mat_specular, mat_shininess, reflection_intensity, emissive_color, power)
+
 
     # load geometires
     objects = [] # list of loaded object geometries and hierarchy roots
@@ -99,30 +102,31 @@ def load_geometry( geometry, material_by_name, geometry_by_name ):
     g_name = geometry["name"]
     g_type = geometry["type"]
     g_mats = [ material_by_name[mat] for mat in geometry.get("materials",[]) ]
+    g_samples = geometry.get("samples", 0)
 
     if g_type == "sphere":
         g_pos = make_vec3(geometry.get("position", [0, 0, 0]))
         g_radius = geometry["radius"]
-        return geom.Sphere(g_name, g_type, g_mats, g_pos, g_radius)
+        return geom.Sphere(g_name, g_type, g_mats, g_pos, g_radius, g_samples)
     elif g_type == "plane":
         g_pos = make_vec3(geometry.get("position", [0, 0, 0]))
         g_normal = make_vec3(geometry["normal"])
-        return geom.Plane(g_name, g_type, g_mats, g_pos, g_normal)
+        return geom.Plane(g_name, g_type, g_mats, g_pos, g_normal, g_samples)
     elif g_type == "box":
         minpos = make_vec3(geometry.get("min",[-1,-1,-1]))
         maxpos = make_vec3(geometry.get("max",[1,1,1]))
-        return geom.AABB(g_name, g_type, g_mats, minpos, maxpos)
+        return geom.AABB(g_name, g_type, g_mats, minpos, maxpos, g_samples)
     elif g_type == "mesh":
         g_path = geometry["filepath"]
         g_pos = make_vec3(geometry.get("position", [0, 0, 0]))
         g_scale = geometry["scale"]
-        return geom.Mesh(g_name, g_type, g_mats, g_pos, g_scale, g_path)
+        return geom.Mesh(g_name, g_type, g_mats, g_pos, g_scale, g_path, g_samples)
     elif g_type == "instance":
         g_pos = make_vec3(geometry.get("position", [0, 0, 0]))
         g_r = make_vec3(geometry.get("rotation", [0, 0, 0]))
         g_s = make_vec3(geometry.get("scale", [1, 1, 1]))
         M = make_matrix(g_pos, g_r, g_s)
-        node = geom.Node(g_name, g_type, M, g_mats)
+        node = geom.Node(g_name, g_type, M, g_mats, g_samples)
         node.children.append( geometry_by_name[geometry["ref"]] )
         return node
     elif g_type == "node":
@@ -130,7 +134,7 @@ def load_geometry( geometry, material_by_name, geometry_by_name ):
         g_r = make_vec3(geometry.get("rotation", [0, 0, 0]))
         g_s = make_vec3(geometry.get("scale", [1, 1, 1]))
         M = make_matrix(g_pos, g_r, g_s)
-        node = geom.Node(g_name, g_type, M, g_mats)
+        node = geom.Node(g_name, g_type, M, g_mats, g_samples)
         for child in geometry["children"]:
             g = load_geometry(child, material_by_name, geometry_by_name)
             node.children.append(g)

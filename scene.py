@@ -109,7 +109,16 @@ class Scene:
         Perform shading calculations for an intersection.
         """
         mat = intersection.mat
-        color_sub = self.ambient * mat.diffuse
+        color_sub = NOTHING_COLOR()
+        if not mat:
+            return color_sub
+        
+        # for objects emitting light 
+        if mat.emissive_color != NOTHING_COLOR():
+            return mat.emissive_color * mat.power
+        
+        # shading from light sources
+        color_sub += self.ambient * mat.diffuse
         for light in self.lights:
             light_dir: glm.vec3 = glm.normalize(light.vector - intersection.position)
             eps = 1e-5
@@ -121,7 +130,28 @@ class Scene:
                 
             if not self.is_light_occluded(light_ray, dist_to_light):
                 color_sub += self.compute_lighting(intersection, light, light_dir, dist_to_light)
-        return color_sub
+
+        # shading from objects emitting light
+        emitted_color = NOTHING_COLOR()
+        for obj in self.objects:
+            if not obj.emits_light:
+                continue
+
+            # Sample lights from the object's surface
+            sampled_lights = obj.sample_light()
+            for light in sampled_lights:
+                light_dir = glm.normalize(light.vector - intersection.position)
+                eps = 1e-5
+
+                # Create a light ray to check visibility
+                light_ray = hc.Ray(intersection.position + eps * intersection.normal, light_dir)
+                dist_to_light = glm.length(light.vector - intersection.position)
+
+                if not self.is_light_occluded(light_ray, dist_to_light):
+                    emitted_color += self.compute_lighting(intersection, light, light_dir, dist_to_light)
+                #if glm.length(emitted_color) != 0:
+                    #print(emitted_color)
+        return color_sub + emitted_color
 
     def compute_lighting(self, intersection: hc.Intersection, light: hc.Light, light_dir: glm.vec3, dist_to_light: float) -> glm.vec3:
         """

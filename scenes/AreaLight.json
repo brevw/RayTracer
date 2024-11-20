@@ -1,0 +1,70 @@
+{
+    "resolution": [720, 720],
+    "AA_jitter": true,
+    "aperture_size": 0.18,
+    "focal_distance": 15,
+    "AA_samples": 3,
+    "depth": 3,
+    "ambient": [0.1, 0.1, 0.1],
+    "camera": {
+        "position": [-3.0, 2.0, 15.0],
+        "lookAt": [0.0, 2.0, 0.0],
+        "up": [0.0, 1.0, 0.0],
+        "fov": 45.0       
+    },
+    "materials": [
+        {
+            "name": "black", 
+            "diffuse": [0.0, 0.0, 0.0], 
+            "specular": [0.0, 0.0, 0.0],
+            "shininess": 0
+        },
+        {
+            "name": "white", 
+            "diffuse": [1.0, 1.0, 1.0], 
+            "specular": [0.0, 0.0, 0.0],
+            "emissive_color": [0.3, 0.3, 0.3],
+            "power": 20
+        },
+        {
+            "name": "grey",
+            "diffuse": [0.5, 0.5, 0.5], 
+            "specular": [0.0, 0.0, 0.0],
+            "shininess": 0,
+            "reflection_intensity": 0.2
+        }
+    ],    
+    "objects": [
+        {
+            "name": "plane", 
+            "type": "plane",
+            "normal": [0.0, 1.0, 0.0],
+            "position": [0.0, 0.0, 0.0],
+            "materials": ["grey"]
+        },
+        {
+            "name": "box_swapper", 
+            "type": "node",
+            "position": [0.0, 3.0, -0.001],
+            "children": [
+                {
+                    "name": "box",
+                    "type": "box",
+                    "min": [-1.5, -2.0, -2],
+                    "max": [1.5, 2.0, 0.0],
+                    "materials": ["white", "grey"],
+                    "samples": 8
+                }
+            ]
+        }
+    ],
+    "lights": [
+        {
+            "name": "light",
+            "type": "point",
+            "position": [1.0, 7.0, 3.0],
+            "colour": [1.0, 1.0, 1.0],
+            "power": 0
+        }
+    ]
+}
