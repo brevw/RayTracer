@@ -72,11 +72,11 @@ class Sphere(Geometry):
 
             # Create a light instance
             light = hc.Light(
-                l_type="point",  # Approximating as a point light for each sample
-                name=f"{self.name}_light",
-                colour=material.emissive_color,
-                vector=position + 1e-3 * normal,  # Position of the light sample
-                attenuation=glm.vec3(1, 0, 0)  # Example attenuation (could be adjusted)
+                l_type = "point",
+                name = f"{self.name}_light",
+                colour = material.emissive_color,
+                vector = position + 1e-3 * normal,
+                attenuation = material.attenuation
             )
             light_instances.append(light)
 
@@ -104,8 +104,6 @@ class Plane(Geometry):
             intersect.mat = None if not self.materials else \
                             self.materials[1] if len(self.materials) > 1 and (int(glm.floor(intersect.position.x)) + int(glm.floor(intersect.position.z))) & 1 == 1 else self.materials[0]
 
-    def sample_light(self, num_samples: int) -> list[tuple[glm.vec3, glm.vec3]]:
-        ...
 
 class AABB(Geometry):
     def __init__(self, name: str, gtype: str, materials: list[hc.Material], minpos: glm.vec3, maxpos: glm.vec3, samples: int):
@@ -215,11 +213,11 @@ class AABB(Geometry):
 
                 # Create a light instance
                 light = hc.Light(
-                    ltype="point", 
-                    name=f"{self.name}_light_{face_index}",
-                    colour=material.emissive_color * material.power / self.samples,
-                    vector= point + 1e-3 * face_data["normal"],
-                    attenuation=glm.vec3(1, 0, 0)
+                    ltype = "point", 
+                    name = f"{self.name}_light_{face_index}",
+                    colour = material.emissive_color * material.power / self.samples,
+                    vector = point + 1e-3 * face_data["normal"],
+                    attenuation = material.attenuation
                 )
                 light_instances.append(light)
         return light_instances

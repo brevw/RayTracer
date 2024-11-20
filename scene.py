@@ -149,8 +149,6 @@ class Scene:
 
                 if not self.is_light_occluded(light_ray, dist_to_light):
                     emitted_color += self.compute_lighting(intersection, light, light_dir, dist_to_light)
-                #if glm.length(emitted_color) != 0:
-                    #print(emitted_color)
         return color_sub + emitted_color
 
     def compute_lighting(self, intersection: hc.Intersection, light: hc.Light, light_dir: glm.vec3, dist_to_light: float) -> glm.vec3:

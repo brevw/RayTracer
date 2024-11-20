@@ -75,8 +75,9 @@ def load_scene(infile: str):
         mat_shininess = 0 if "shininess" not in material else material["shininess"]
         reflection_intensity = 0 if "reflection_intensity" not in material else material["reflection_intensity"]
         emissive_color = glm.vec3(0.0, 0.0, 0.0) if "emissive_color" not in material else make_vec3(material["emissive_color"])
+        attenuation = glm.vec3(1.0, 0.0, 0.0) if "attenuation" not in material else make_vec3(material["attenuation"])
         power = 1 if "power" not in material else material["power"]
-        material_by_name[mat_name] = hc.Material(mat_name, mat_diffuse, mat_specular, mat_shininess, reflection_intensity, emissive_color, power)
+        material_by_name[mat_name] = hc.Material(mat_name, mat_diffuse, mat_specular, mat_shininess, reflection_intensity, emissive_color, power, attenuation)
 
 
     # load geometires

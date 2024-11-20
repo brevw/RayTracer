@@ -24,7 +24,8 @@
             "diffuse": [1.0, 1.0, 1.0], 
             "specular": [0.0, 0.0, 0.0],
             "emissive_color": [0.3, 0.3, 0.3],
-            "power": 20
+            "power": 60,
+            "attenuation": [0.3, 0.3, 0.0]
         },
         {
             "name": "grey",

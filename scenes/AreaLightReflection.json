@@ -59,7 +59,7 @@
             "diffuse": [1.0, 1.0, 1.0], 
             "specular": [0.0, 0.0, 0.0],
             "emissive_color": [0.3, 0.3, 0.3],
-            "power": 40
+            "power": 80
         }
     ],
     "objects": [
