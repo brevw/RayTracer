@@ -109,6 +109,10 @@ def load_geometry( geometry, material_by_name, geometry_by_name ):
         g_pos = make_vec3(geometry.get("position", [0, 0, 0]))
         g_radius = geometry["radius"]
         return geom.Sphere(g_name, g_type, g_mats, g_pos, g_radius, g_samples)
+    elif g_type == "metaball":
+        g_centers = [make_vec3(x) for x in geometry["centers"]]
+        g_threshold = geometry["threshold"]
+        return geom.MetaBall(g_name, g_type, g_mats, g_samples, g_centers, g_threshold)
     elif g_type == "plane":
         g_pos = make_vec3(geometry.get("position", [0, 0, 0]))
         g_normal = make_vec3(geometry["normal"])

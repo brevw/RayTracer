@@ -82,6 +82,51 @@ class Sphere(Geometry):
 
         return light_instances
 
+class MetaBall(Geometry):
+    def __init__(self, name: str, gtype: str, materials: list[hc.Material], samples: int, centers: list[glm.vec3], threshold: float):
+        super().__init__(name, gtype, materials, samples)
+        self.centers = centers
+        self.threshold = threshold
+    
+    def eval(self, p: glm.vec3) -> float:
+        val = 0.0
+        for c in self.centers:
+            val += 1.0 / (glm.length2(p - c) + 1e-4)
+        return val
+
+    def sdf(self, p: glm.vec3) -> float:
+        return (self.threshold - self.eval(p))
+    
+    def grad(self, p: glm.vec3) -> glm.vec3:
+        gradient = glm.vec3(0.0, 0.0, 0.0)
+        for c in self.centers:
+            diff = p - c 
+            gradient += 2 *  diff / (glm.length2(diff) + 1e-3) ** 2
+        return gradient
+
+    def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
+        # use ray marching 
+        p = ray.origin
+        total_distance = 0
+
+        if self.eval(p) < 1e-3:
+            p += 0.6 * ray.direction
+            total_distance += 0.6
+
+        for _ in range(100):
+            sdf_value = self.sdf(p)
+            p += sdf_value * ray.direction
+            total_distance += sdf_value
+            if abs(sdf_value) < 1e-3:  # If close enough to the surface
+                if total_distance < 1e-2:
+                    return
+                intersect.t = glm.length(ray.origin - p)
+                intersect.mat = self.materials[0] if self.materials else None
+                intersect.position = p
+                intersect.normal = glm.normalize(self.grad(p))
+                return
+            
+
 class Plane(Geometry):
     def __init__(self, name: str, gtype: str, materials: list[hc.Material], point: glm.vec3, normal: glm.vec3, samples: int):
         super().__init__(name, gtype, materials, samples)
@@ -103,7 +148,6 @@ class Plane(Geometry):
             intersect.position = p + t * d
             intersect.mat = None if not self.materials else \
                             self.materials[1] if len(self.materials) > 1 and (int(glm.floor(intersect.position.x)) + int(glm.floor(intersect.position.z))) & 1 == 1 else self.materials[0]
-
 
 class AABB(Geometry):
     def __init__(self, name: str, gtype: str, materials: list[hc.Material], minpos: glm.vec3, maxpos: glm.vec3, samples: int):
@@ -221,7 +265,6 @@ class AABB(Geometry):
                 )
                 light_instances.append(light)
         return light_instances
-
 
 class Mesh(Geometry):
     def __init__(self, name: str, gtype: str, materials: list[hc.Material], translate: glm.vec3, scale: float,
