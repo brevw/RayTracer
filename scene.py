@@ -93,14 +93,32 @@ class Scene:
         # Perform shading computations on the intersection point
         if intersection.t < INF:
             base_color = self.shade(intersection)
-            if intersection.mat.reflection_intensity <= 0: 
+            if intersection.mat.reflection_intensity <= 0 and intersection.mat.refraction_intensity <= 0: 
                 return base_color
-            reflected_direction = 2 * glm.dot(intersection.normal, -ray.direction) * intersection.normal + ray.direction
-            reflected_ray = hc.Ray(intersection.position + 1e-4 * intersection.normal, reflected_direction)
 
-            # Compute reflected color 
-            reflected_color = self.trace_ray(reflected_ray, depth - 1)
-            return glm.mix(base_color, reflected_color, intersection.mat.reflection_intensity)
+            reflected_color, refracted_color = None, None
+            
+            # compute reflected ray
+            if intersection.mat.reflection_intensity > 0:
+                reflected_direction = 2 * glm.dot(intersection.normal, -ray.direction) * intersection.normal + ray.direction
+                reflected_ray = hc.Ray(intersection.position + 1e-4 * intersection.normal, reflected_direction)
+                reflected_color = self.trace_ray(reflected_ray, depth - 1)
+            # compute refracted ray
+            if intersection.mat.refraction_intensity > 0:
+                refraction_test = glm.dot(intersection.normal, ray.direction) < 0
+                refracted_direction = self.refract_ray(ray.direction, intersection.normal, intersection.mat.refractive_index if refraction_test else 1.0 / intersection.mat.refractive_index)
+                refracted_ray = hc.Ray(intersection.position + (-1 if refraction_test else +1) * 1e-4 * intersection.normal, refracted_direction)
+                refracted_color = self.trace_ray(refracted_ray, depth - 1)
+
+            # Compute reflected and refracted light color 
+            
+            if reflected_color and not refracted_color:
+                return glm.mix(base_color, reflected_color, intersection.mat.reflection_intensity)
+            elif not reflected_color and refracted_color:
+                return glm.mix(base_color, refracted_color, intersection.mat.refraction_intensity)
+            else: 
+                color_ = glm.mix(base_color, reflected_color, intersection.mat.reflection_intensity)
+                return glm.mix(color_, refracted_color, intersection.mat.refraction_intensity)
 
         return NOTHING_COLOR()
 
@@ -127,9 +145,13 @@ class Scene:
             light_ray = hc.Ray(intersection.position + eps * intersection.normal, light_dir)
             # check is light ray is occluded
             dist_to_light = glm.length(light.vector - intersection.position)
-                
-            if not self.is_light_occluded(light_ray, dist_to_light):
-                color_sub += self.compute_lighting(intersection, light, light_dir, dist_to_light)
+            
+            # blend used to fix shadows for transparent objects 
+            occluded, blend = self.is_light_occluded(light_ray, dist_to_light)
+            if not occluded or blend != 0:
+                if not occluded:
+                    blend = 1
+                color_sub += self.compute_lighting(intersection, light, light_dir, dist_to_light) * blend
 
         # shading from objects emitting light
         emitted_color = NOTHING_COLOR()
@@ -147,7 +169,10 @@ class Scene:
                 light_ray = hc.Ray(intersection.position + eps * intersection.normal, light_dir)
                 dist_to_light = glm.length(light.vector - intersection.position)
 
-                if not self.is_light_occluded(light_ray, dist_to_light):
+                occluded, blend = self.is_light_occluded(light_ray, dist_to_light)
+                if not occluded or blend != 0:
+                    if not occluded:
+                        blend = 1
                     emitted_color += self.compute_lighting(intersection, light, light_dir, dist_to_light)
         return color_sub + emitted_color
 
@@ -170,7 +195,7 @@ class Scene:
         attenuation = 1.0 / (light.attenuation[2] + light.attenuation[1] * dist_to_light + light.attenuation[0] * dist_to_light * dist_to_light)
         return color_light * attenuation
     
-    def is_light_occluded(self, light_ray: hc.Ray, dist_to_light: float) -> bool:
+    def is_light_occluded(self, light_ray: hc.Ray, dist_to_light: float) -> tuple[bool, float]:
         """
         Check if a light ray is occluded by any object.
         """
@@ -178,8 +203,8 @@ class Scene:
         for obj in self.objects:
             obj.intersect(light_ray, intersection_light_ray)
             if intersection_light_ray.t < dist_to_light: 
-                return True
-        return False
+                return True, intersection_light_ray.mat.refraction_intensity
+        return False, 0
 
     def get_global_execution_context(self) -> dict:
         """
@@ -254,3 +279,21 @@ class Scene:
             ray_direction = glm.normalize(focus_point - ray_origin)
 
         return hc.Ray(ray_origin, ray_direction)
+    
+    def refract_ray(self, v: glm.vec3, normal: glm.vec3, index: float):
+        if index == 1:
+            return v
+        cosi = glm.clamp(glm.dot(v, normal), -1, 1)
+        etai = 1.0  
+        etat = index
+        if cosi < 0:
+            cosi = -cosi
+        else:
+            normal = -normal
+            etai, etat = etat, etai
+
+        eta_ratio = etai / etat
+        k = 1 - eta_ratio ** 2 * (1 - cosi ** 2)
+        if k < 0:
+            return None
+        return glm.normalize(eta_ratio * v + (eta_ratio * cosi - math.sqrt(k)) * normal)
