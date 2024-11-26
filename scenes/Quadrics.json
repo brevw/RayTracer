@@ -1,0 +1,146 @@
+{
+    "resolution": [1280, 720],
+    "aperture_size": 0.18,
+    "focal_distance": 8,
+    "depth": 3,
+    "AA_jitter": true, 
+    "AA_samples": 8,
+    "ambient": [0.1, 0.1, 0.1],
+    "camera": {
+        "position": [0.0, 2.0, 8.0],
+        "lookAt": [0.0, 2.0, 0.0],
+        "up": [0.0, 1.0, 0.0],
+        "fov": 45.0
+    },
+    "materials": [
+        {
+            "name": "yellow",
+            "diffuse": [1.0, 1.0, 0.5],
+            "specular": [0.5, 0.5, 0.5],
+            "reflection_intensity": 0.3,
+            "shininess": 32
+        },
+        {
+            "name": "french rose",
+            "diffuse": [0.94, 0.34, 0.44],
+            "specular": [0.5, 0.5, 0.5],
+            "reflection_intensity": 0.3,
+            "shininess": 32
+        },
+        {
+            "name": "just right",
+            "diffuse": [0.93, 0.8, 0.725],
+            "specular": [0.5, 0.5, 0.5],
+            "reflection_intensity": 0.3,
+            "shininess": 32
+        },
+        {
+            "name": "apricot",
+            "diffuse": [0.94, 0.48, 0.41],
+            "specular": [0.5, 0.5, 0.5],
+            "reflection_intensity": 0.3,
+            "shininess": 32
+        },
+        {
+            "name": "brillant rose",
+            "diffuse": [0.96, 0.41, 0.64],
+            "specular": [0.5, 0.5, 0.5],
+            "reflection_intensity": 0.3,
+            "shininess": 32
+        },
+        {
+            "name": "white",
+            "diffuse": [1.0, 1.0, 1.0],
+            "specular": [0.0, 0.0, 0.0],
+            "shininess": 0
+        }
+    ],
+    "objects": [
+        {
+            "name": "ground",
+            "type": "plane",
+            "normal": [0.0, 1.0, 0.0],
+            "position": [0.0, 0.0, 0.0],
+            "materials": ["white"]
+        },
+        {
+            "name": "ground1",
+            "type": "plane",
+            "normal": [0.0, 0.0, 1.0],
+            "position": [0.0, 0.0, -8.0],
+            "materials": ["white"]
+        },
+        {
+            "name": "ground2",
+            "type": "plane",
+            "normal": [-1.0, 0.0, 0.0],
+            "position": [11.0, 0.0, -8.0],
+            "materials": ["white"]
+        },
+        {
+            "name": "ground3",
+            "type": "plane",
+            "normal": [1.0, 0.0, 0.0],
+            "position": [-11.0, 0.0, -8.0],
+            "materials": ["white"]
+        },
+        {
+            "name": "ground4",
+            "type": "plane",
+            "normal": [0.0, 0.0, 1.0],
+            "position": [0.0, 0.0, 11.0],
+            "materials": ["white"]
+        },
+        
+        {
+            "name": "quadric_group1",
+            "type": "node",
+            "rotation": [90.0, 0.0, 0.0], 
+            "position": [0.0, 1.0, 0.0], 
+            "scale": [0.5, 0.5, 0.5],
+            "children": [
+                {
+                    "name": "quadric1",
+                    "type": "quadric",
+                    "Q": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1, 0], [0, 0, 0, -1]],
+                    "materials": ["apricot"],
+                    "bounds_min": [-2, -2, -2],
+                    "bounds_max": [2, 2, 2]
+                },
+                {
+                    "name": "quadric_group2",
+                    "type": "node",
+                    "rotation": [0.0, 0.0, 0.0], 
+                    "position": [6.0, -1.0, 0.0], 
+                    "children": [
+                        {
+                            "name": "quadric2",
+                            "type": "quadric",
+                            "Q": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1, 0], [0, 0, 0, -1]],
+                            "materials": ["brillant rose"],
+                            "bounds_min": [-2, -2, -2],
+                            "bounds_max": [2, 2, 2]
+                        }
+                    ]
+
+                }
+            ]
+        }
+    ],
+    "lights": [
+        {
+            "name": "light1",
+            "type": "point",
+            "position": [1.0, 14.0, 0.0],
+            "colour": [3.0, 1.0, 1.0],
+            "power": 100
+        },
+        {
+            "name": "light2",
+            "type": "point",
+            "position": [-10.0, 8.0, 5.0],
+            "colour": [0.8, 0.8, 0.8],
+            "power": 100
+        }
+    ]
+}

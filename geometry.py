@@ -29,6 +29,57 @@ class Geometry:
         """
         return []
 
+class Quadrics(Geometry):
+    def __init__(self, name: str, gtype: str, materials: list[hc.Material], samples: int, Q: glm.mat4, bounds_min: list, bounds_max: list):
+        super().__init__(name, gtype, materials, samples)
+        self.Q = Q
+        self.bounds_min = bounds_min
+        self.bounds_max = bounds_max
+    
+    def exceed_limits(self, p):
+        return not (self.bounds_min[0] < p.x < self.bounds_max[0]) or not (self.bounds_min[1] < p.y < self.bounds_max[1]) or not (self.bounds_min[2] < p.z < self.bounds_max[2])
+
+    def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
+        o = glm.vec4(ray.origin, 1.0)
+        d = glm.vec4(ray.direction, 0.0)
+
+        a = glm.dot(d, self.Q * d)
+        b = 2.0 * glm.dot(o, self.Q * d)
+        c = glm.dot(o, self.Q * o)
+
+        # case where a is zero
+        if a < 1e-4:
+            if b < 1e-4:
+                return 
+            t = - c / b
+            temp = ray.origin + t * ray.direction
+            if self.exceed_limits(temp) or t > intersect.t:
+                return
+            intersect.t = t
+            intersect.position = temp
+            intersect.mat = self.materials[0] if self.materials else None
+            normal = 2 * self.Q * glm.vec4(intersect.position.xyz, 1.0)
+            intersect.normal = glm.normalize(normal.xyz)
+            return 
+
+        delta = b * b - 4 * a * c
+        if delta < 0: 
+            return
+
+        delta = math.sqrt(delta)
+        t = (-b - delta) / (2 * a)
+        if t < 0:
+            t = (-b + delta) / (2 * a)
+        if t > 0: 
+            temp = ray.origin + t * ray.direction
+            if self.exceed_limits(temp) or t > intersect.t:
+                return 
+            intersect.t = t
+            intersect.position = temp
+            intersect.mat = self.materials[0] if self.materials else None
+            normal = 2 * self.Q * glm.vec4(intersect.position.xyz, 1.0)
+            intersect.normal = glm.normalize(normal.xyz)
+
 class Sphere(Geometry):
     def __init__(self, name: str, gtype: str, materials: list[hc.Material], center: glm.vec3, radius: float, samples: int):
         super().__init__(name, gtype, materials, samples)
@@ -126,7 +177,6 @@ class MetaBall(Geometry):
                 intersect.normal = glm.normalize(self.grad(p))
                 return
             
-
 class Plane(Geometry):
     def __init__(self, name: str, gtype: str, materials: list[hc.Material], point: glm.vec3, normal: glm.vec3, samples: int):
         super().__init__(name, gtype, materials, samples)

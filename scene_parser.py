@@ -109,6 +109,19 @@ def load_geometry( geometry, material_by_name, geometry_by_name ):
         g_pos = make_vec3(geometry.get("position", [0, 0, 0]))
         g_radius = geometry["radius"]
         return geom.Sphere(g_name, g_type, g_mats, g_pos, g_radius, g_samples)
+    elif g_type == "quadric":
+        matrix_list = geometry.get("Q")
+        flattened = [
+            matrix_list[0][0], matrix_list[1][0], matrix_list[2][0], matrix_list[3][0],
+            matrix_list[0][1], matrix_list[1][1], matrix_list[2][1], matrix_list[3][1],
+            matrix_list[0][2], matrix_list[1][2], matrix_list[2][2], matrix_list[3][2],
+            matrix_list[0][3], matrix_list[1][3], matrix_list[2][3], matrix_list[3][3]
+        ]
+        g_Q = glm.mat4(*flattened)
+        inf = 1000
+        g_bounds_min = geometry.get("bounds_min", [-inf, -inf, -inf])
+        g_bounds_max = geometry.get("bounds_max", [inf, inf, inf])
+        return geom.Quadrics(g_name, g_type, g_mats, g_samples, g_Q, g_bounds_min, g_bounds_max)
     elif g_type == "metaball":
         g_centers = [make_vec3(x) for x in geometry["centers"]]
         g_threshold = geometry["threshold"]
