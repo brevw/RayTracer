@@ -169,9 +169,10 @@ class MetaBall(Geometry):
             p += sdf_value * ray.direction
             total_distance += sdf_value
             if abs(sdf_value) < 1e-3:  # If close enough to the surface
-                if total_distance < 1e-2:
+                t = glm.length(ray.origin - p)
+                if total_distance < 1e-2 or t > intersect.t:
                     return
-                intersect.t = glm.length(ray.origin - p)
+                intersect.t = t
                 intersect.mat = self.materials[0] if self.materials else None
                 intersect.position = p
                 intersect.normal = glm.normalize(self.grad(p))
