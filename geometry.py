@@ -215,9 +215,9 @@ class Plane(Geometry):
             intersect.geom = self
     
     def uv_coordinates(self, point: glm.vec3) -> tuple:
-        u = (point.x % 2.0)
-        v = (point.z % 2.0)
-        return u / 2.0, v / 2.0
+        u = (point.x % 4.0)
+        v = (point.z % 4.0)
+        return u / 4.0, v / 4.0
 
 class AABB(Geometry):
     def __init__(self, name: str, gtype: str, materials: list[hc.Material], minpos: glm.vec3, maxpos: glm.vec3, samples: int):
@@ -438,3 +438,30 @@ class Node(Geometry):
         for l_ in l:
             l_.vector = self.M * l_.vector
         return l
+    
+class MovingGeometry(Geometry):
+    def __init__(self, name: str, gtype: str, materials: list[hc.Material], samples: int, geom: Geometry, start_translation: glm.vec3, end_translation: glm.vec3, time_start: float, time_end: float):
+        super().__init__(name, gtype, materials, samples)
+        self.geom = geom
+        self.start_translation = start_translation
+        self.end_translation = end_translation
+        self.time_start = time_start
+        self.time_end = time_end
+    def interpolate_transform(self, time: float) -> glm.mat4:
+        interp = (time - self.time_start) / (self.time_end - self.time_start)
+        interp = glm.clamp(interp, self.time_start, self.time_end)
+        return glm.mix(self.start_translation, self.end_translation, interp)
+    def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
+        # works nearly the same as Node Geometry object but the difference
+        # is we can't precompute the inverse because time is sampled randomly on-the-fly
+        current_translation = self.interpolate_transform(ray.time)
+
+        transformed_origin = ray.origin - current_translation
+        local_ray = hc.Ray(transformed_origin, ray.direction, ray.time)
+
+        old_t = intersect.t 
+        self.geom.intersect(local_ray, intersect)
+
+        if old_t != intersect.t:
+            intersect.position = intersect.position + current_translation
+            intersect.geom = self

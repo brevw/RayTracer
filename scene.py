@@ -27,7 +27,9 @@ class Scene:
                  objects: list[geom.Geometry],
                  aperture_size: float,
                  focal_distance: float,
-                 depth: int
+                 depth: int,
+                 start_time: float,
+                 end_time: float
                  ):
         self.width = width  # width of image
         self.height = height  # height of image
@@ -48,6 +50,10 @@ class Scene:
 
         # for mirror reflection
         self.depth = depth
+
+        # time of the render to do motion blur 
+        self.start_time = start_time
+        self.end_time = end_time
 
     def render(self):
         image = np.zeros((self.height, self.width, 3)) # image with row,col indices and 3 channels, origin is top left
@@ -92,7 +98,7 @@ class Scene:
 
         # Perform shading computations on the intersection point
         if intersection.t < INF:
-            base_color = self.shade(intersection)
+            base_color = self.shade(intersection, ray.time)
             if intersection.mat.reflection_intensity <= 0 and intersection.mat.refraction_intensity <= 0: 
                 return base_color
 
@@ -101,13 +107,13 @@ class Scene:
             # compute reflected ray
             if intersection.mat.reflection_intensity > 0:
                 reflected_direction = 2 * glm.dot(intersection.normal, -ray.direction) * intersection.normal + ray.direction
-                reflected_ray = hc.Ray(intersection.position + 1e-4 * intersection.normal, reflected_direction)
+                reflected_ray = hc.Ray(intersection.position + 1e-4 * intersection.normal, reflected_direction, ray.time)
                 reflected_color = self.trace_ray(reflected_ray, depth - 1)
             # compute refracted ray
             if intersection.mat.refraction_intensity > 0:
                 refraction_test = glm.dot(intersection.normal, ray.direction) < 0
                 refracted_direction = self.refract_ray(ray.direction, intersection.normal, intersection.mat.refractive_index if refraction_test else 1.0 / intersection.mat.refractive_index)
-                refracted_ray = hc.Ray(intersection.position + (-1 if refraction_test else +1) * 1e-4 * intersection.normal, refracted_direction)
+                refracted_ray = hc.Ray(intersection.position + (-1 if refraction_test else +1) * 1e-4 * intersection.normal, refracted_direction, ray.time)
                 refracted_color = self.trace_ray(refracted_ray, depth - 1)
 
             # Compute reflected and refracted light color 
@@ -122,7 +128,7 @@ class Scene:
 
         return NOTHING_COLOR()
 
-    def shade(self, intersection: hc.Intersection) -> glm.vec3:
+    def shade(self, intersection: hc.Intersection, time: float) -> glm.vec3:
         """
         Perform shading calculations for an intersection.
         """
@@ -149,7 +155,7 @@ class Scene:
             eps = 1e-5
             
             # move eps through normal so that we don't have self shadowing 
-            light_ray = hc.Ray(intersection.position + eps * intersection.normal, light_dir)
+            light_ray = hc.Ray(intersection.position + eps * intersection.normal, light_dir, time)
             # check is light ray is occluded
             dist_to_light = glm.length(light.vector - intersection.position)
             
@@ -173,7 +179,7 @@ class Scene:
                 eps = 1e-5
 
                 # Create a light ray to check visibility
-                light_ray = hc.Ray(intersection.position + eps * intersection.normal, light_dir)
+                light_ray = hc.Ray(intersection.position + eps * intersection.normal, light_dir, time)
                 dist_to_light = glm.length(light.vector - intersection.position)
 
                 occluded, blend = self.is_light_occluded(light_ray, dist_to_light)
@@ -285,7 +291,7 @@ class Scene:
             ray_origin = ray_origin + lens_u * context["u"] + lens_v * context["v"]
             ray_direction = glm.normalize(focus_point - ray_origin)
 
-        return hc.Ray(ray_origin, ray_direction)
+        return hc.Ray(ray_origin, ray_direction, random.uniform(self.start_time, self.end_time))
     
     def refract_ray(self, v: glm.vec3, normal: glm.vec3, index: float):
         if index == 1:

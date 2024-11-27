@@ -45,6 +45,10 @@ def load_scene(infile: str):
 
     # max depth for reflection 
     depth = data.get("depth", 3) # max depth by default is 3
+
+    # time from start to end of the rendering
+    start_time = data.get("start_time", 0.0)
+    end_time = data.get("end_time", 0.0)
     
     # Loading scene lights
     lights = []    
@@ -88,7 +92,7 @@ def load_scene(infile: str):
     geometry_by_name = {} # dictionary of geometries by name (for instances)
 
     for geometry in data["objects"]:
-        g = load_geometry( geometry, material_by_name, geometry_by_name )
+        g = load_geometry( geometry, material_by_name, geometry_by_name, objects )
         objects.append(g)
         geometry_by_name[g.name] = g
 
@@ -97,10 +101,12 @@ def load_scene(infile: str):
                 ambient, lights,  # Light settings
                 objects, # Geometries to render
                 aperture_size, focal_distance, # DOF
-                depth # for Reflections
+                depth, # for Reflections
+                start_time, 
+                end_time
                 )
 
-def load_geometry( geometry, material_by_name, geometry_by_name ):
+def load_geometry( geometry, material_by_name, geometry_by_name, objects:list ):
 
     # Elements common to all objects: name, type, and material(s)
     g_name = geometry["name"]
@@ -112,6 +118,16 @@ def load_geometry( geometry, material_by_name, geometry_by_name ):
         g_pos = make_vec3(geometry.get("position", [0, 0, 0]))
         g_radius = geometry["radius"]
         return geom.Sphere(g_name, g_type, g_mats, g_pos, g_radius, g_samples)
+    elif g_type == "moving_geometry":
+        name = geometry.get("geom")
+        g_geom = geometry_by_name[name]
+        objects.remove(g_geom)
+        geometry_by_name.pop(name)
+        g_start_translation = geometry.get("start_translation")
+        g_end_translation = geometry.get("end_translation")
+        g_time_start = geometry.get("time_start")
+        g_time_end = geometry.get("time_end")
+        return geom.MovingGeometry(g_name, g_type, g_mats, g_samples, g_geom, g_start_translation, g_end_translation, g_time_start, g_time_end)
     elif g_type == "quadric":
         matrix_list = geometry.get("Q")
         flattened = [
@@ -157,7 +173,7 @@ def load_geometry( geometry, material_by_name, geometry_by_name ):
         M = make_matrix(g_pos, g_r, g_s)
         node = geom.Node(g_name, g_type, M, g_mats, g_samples)
         for child in geometry["children"]:
-            g = load_geometry(child, material_by_name, geometry_by_name)
+            g = load_geometry(child, material_by_name, geometry_by_name, objects)
             node.children.append(g)
             geometry_by_name[g.name] = g
         return node

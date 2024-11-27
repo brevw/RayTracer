@@ -1,0 +1,201 @@
+{
+    "resolution": [1280, 720],
+    "aperture_size": 0.18,
+    "focal_distance": 8,
+    "depth": 3,
+    "AA_jitter": true, 
+    "AA_samples": 6,
+    "ambient": [0.1, 0.1, 0.1],
+    "start_time": 0.0,
+    "end_time": 1.0,
+    "camera": {
+        "position": [0.0, 2.0, 8.0],
+        "lookAt": [0.0, 2.0, 0.0],
+        "up": [0.0, 1.0, 0.0],
+        "fov": 45.0
+    },
+    "materials": [
+        {
+            "name": "yellow",
+            "diffuse": [1.0, 1.0, 0.5],
+            "specular": [0.5, 0.5, 0.5],
+            "reflection_intensity": 0.3,
+            "shininess": 32
+        },
+        {
+            "name": "french rose",
+            "diffuse": [0.94, 0.34, 0.44],
+            "specular": [0.5, 0.5, 0.5],
+            "reflection_intensity": 0.3,
+            "shininess": 32
+        },
+        {
+            "name": "just right",
+            "diffuse": [0.93, 0.8, 0.725],
+            "specular": [0.5, 0.5, 0.5],
+            "reflection_intensity": 0.3,
+            "shininess": 32
+        },
+        {
+            "name": "apricot",
+            "diffuse": [0.94, 0.48, 0.41],
+            "specular": [0.5, 0.5, 0.5],
+            "reflection_intensity": 0.3,
+            "shininess": 32
+        },
+        {
+            "name": "brillant rose",
+            "diffuse": [0.96, 0.41, 0.64],
+            "specular": [0.5, 0.5, 0.5],
+            "reflection_intensity": 0.3,
+            "shininess": 32
+        },
+        {
+            "name": "white",
+            "diffuse": [1.0, 1.0, 1.0],
+            "specular": [0.0, 0.0, 0.0],
+            "shininess": 0
+        },
+        {
+            "name": "white_emitter", 
+            "diffuse": [1.0, 1.0, 1.0], 
+            "specular": [0.0, 0.0, 0.0],
+            "emissive_color": [0.3, 0.3, 0.3],
+            "power": 200
+        },
+        {
+            "name": "wood_floor",
+            "specular": [0.1, 0.1, 0.1],
+            "texture": "floor_wood.png",
+            "shininess": 0
+        },
+        {
+            "name": "glass",
+            "diffuse": [1.0, 1.0, 1.0],
+            "specular": [0.9, 0.9, 0.9],
+            "reflection_intensity": 0.5,
+            "refractive_index": 1,
+            "refraction_intensity": 0.7,
+            "shininess": 128
+        },
+        {
+            "name": "marble",
+            "texture": "marble.png",
+            "specular": [0.7, 0.7, 0.7],
+            "shininess": 128
+        }
+    ],
+    "objects": [
+        {
+            "name": "ground",
+            "type": "plane",
+            "normal": [0.0, 1.0, 0.0],
+            "position": [0.0, 0.0, 0.0],
+            "materials": ["wood_floor"]
+        },
+        {
+            "name": "ground1",
+            "type": "plane",
+            "normal": [0.0, 0.0, 1.0],
+            "position": [0.0, 0.0, -8.0],
+            "materials": ["wood_floor"]
+        },
+        {
+            "name": "ground2",
+            "type": "plane",
+            "normal": [-1.0, 0.0, 0.0],
+            "position": [11.0, 0.0, -8.0],
+            "materials": ["wood_floor"]
+        },
+        {
+            "name": "ground3",
+            "type": "plane",
+            "normal": [1.0, 0.0, 0.0],
+            "position": [-11.0, 0.0, -8.0],
+            "materials": ["wood_floor"]
+        },
+        {
+            "name": "ground4",
+            "type": "plane",
+            "normal": [0.0, -1.0, 0.0],
+            "position": [0.0, 20.0, 0.0],
+            "materials": ["wood_floor"]
+        },
+        {
+            "name": "ground5",
+            "type": "plane",
+            "normal": [0.0, 0.0, 1.0],
+            "position": [0.0, 0.0, 10.0],
+            "materials": ["wood_floor"]
+        },
+        {
+            "name": "box_light_swapper", 
+            "type": "node",
+            "position": [0.0, 5.01, 0.0],
+            "rotation": [90.0, 0.0, 0.0], 
+            "children": [
+                {
+                    "name": "box_light",
+                    "type": "box",
+                    "min": [-1.5, -2.0, -0.2],
+                    "max": [1.5, 2.0, 0.0],
+                    "materials": ["white_emitter", "white"],
+                    "samples": 6
+                }
+            ]
+        },
+        {
+            "name": "middle_object",
+            "type": "node",
+            "rotation": [0.0, 0.0, 0.0], 
+            "position": [0.0, 0.0, 0.0], 
+            "scale": [1, 1, 1],
+            "children": [
+                {
+                    "name": "middle_box", 
+                    "type": "box",
+                    "materials": ["yellow"], 
+                    "min": [-1, 0, -1], 
+                    "max": [1, 2, 1]
+                },
+                {
+                    "name": "quadric_group2",
+                    "type": "node",
+                    "rotation": [90.0, 90.0, 0.0], 
+                    "position": [0.0, 2.5, 0.0], 
+                    "scale": [0.5, 0.5, 0.5],
+                    "children": [
+                        {
+                            "name": "quadric2",
+                            "type": "quadric",
+                            "Q": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1, 0], [0, 0, 0, -1]],
+                            "materials": ["yellow"],
+                            "bounds_min": [-1, -1, -1],
+                            "bounds_max": [1, 1, 1]
+                        }
+                    ]
+
+                }
+            ]
+        },
+        {
+            "name": "sphere1",
+            "type": "sphere",
+            "radius": 2.0,
+            "position": [5, 2.0, -3.0],
+            "materials": ["marble"]
+        },
+        {
+            "name": "moving_sphere",
+            "type": "moving_geometry",
+            "geom": "sphere1",
+            "start_translation": [-12, 0, 0],
+            "end_translation": [-9, 0, 0],
+            "time_start": 0.0,
+            "time_end": 1.0
+        }
+    ],
+    "lights": [
+        
+    ]
+}
