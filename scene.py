@@ -135,8 +135,15 @@ class Scene:
         if mat.emissive_color != NOTHING_COLOR():
             return mat.emissive_color * mat.power
         
+        # determine base color from material or its texture 
+        base_color = mat.diffuse
+        u, v = None, None
+        if mat.texture:
+            u, v = intersection.geom.uv_coordinates(intersection.position)
+            base_color = mat.texture.sample(u, v)
+
         # shading from light sources
-        color_sub += self.ambient * mat.diffuse
+        color_sub += self.ambient * base_color
         for light in self.lights:
             light_dir: glm.vec3 = glm.normalize(light.vector - intersection.position)
             eps = 1e-5
@@ -151,7 +158,7 @@ class Scene:
             if not occluded or blend != 0:
                 if not occluded:
                     blend = 1
-                color_sub += self.compute_lighting(intersection, light, light_dir, dist_to_light) * blend
+                color_sub += self.compute_lighting(intersection, light, light_dir, dist_to_light, base_color) * blend
 
         # shading from objects emitting light
         emitted_color = NOTHING_COLOR()
@@ -173,10 +180,10 @@ class Scene:
                 if not occluded or blend != 0:
                     if not occluded:
                         blend = 1
-                    emitted_color += self.compute_lighting(intersection, light, light_dir, dist_to_light)
+                    emitted_color += self.compute_lighting(intersection, light, light_dir, dist_to_light, base_color) * blend
         return color_sub + emitted_color
 
-    def compute_lighting(self, intersection: hc.Intersection, light: hc.Light, light_dir: glm.vec3, dist_to_light: float) -> glm.vec3:
+    def compute_lighting(self, intersection: hc.Intersection, light: hc.Light, light_dir: glm.vec3, dist_to_light: float, base_color: glm.vec3) -> glm.vec3:
         """
         Compute diffuse and specular lighting contributions.
         Here we suppose that the light is not occluded with respect to the intersection point.
@@ -188,7 +195,7 @@ class Scene:
         v_: glm.vec3 = glm.normalize(self.eye_position - intersection.position)
         h_: glm.vec3 = glm.normalize(v_ + l_)
 
-        diffuse  = max(0.0, glm.dot(n_, l_)) * mat.diffuse
+        diffuse  = max(0.0, glm.dot(n_, l_)) * base_color
         specular = math.pow(max(0.0, glm.dot(n_, h_)), mat.shininess) * mat.specular
 
         color_light = (diffuse + specular) * light.colour

@@ -28,6 +28,9 @@ class Geometry:
         Returns a list of (point, normal) pairs.
         """
         return []
+    
+    def uv_coordinates(self, point: glm.vec3) -> tuple:
+        return (0.0, 0.0)
 
 class Quadrics(Geometry):
     def __init__(self, name: str, gtype: str, materials: list[hc.Material], samples: int, Q: glm.mat4, bounds_min: list, bounds_max: list):
@@ -60,6 +63,7 @@ class Quadrics(Geometry):
             intersect.mat = self.materials[0] if self.materials else None
             normal = 2 * self.Q * glm.vec4(intersect.position.xyz, 1.0)
             intersect.normal = glm.normalize(normal.xyz)
+            intersect.geom = self
             return 
 
         delta = b * b - 4 * a * c
@@ -79,6 +83,7 @@ class Quadrics(Geometry):
             intersect.mat = self.materials[0] if self.materials else None
             normal = 2 * self.Q * glm.vec4(intersect.position.xyz, 1.0)
             intersect.normal = glm.normalize(normal.xyz)
+            intersect.geom = self
 
 class Sphere(Geometry):
     def __init__(self, name: str, gtype: str, materials: list[hc.Material], center: glm.vec3, radius: float, samples: int):
@@ -103,6 +108,7 @@ class Sphere(Geometry):
             intersect.position = p + t * d
             intersect.normal = glm.normalize(intersect.position - self.center)
             intersect.mat = self.materials[0] if self.materials else None 
+            intersect.geom = self
     def sample_light(self) -> list[hc.Light]:
         if not self.emits_light:
             return []
@@ -132,6 +138,12 @@ class Sphere(Geometry):
             light_instances.append(light)
 
         return light_instances
+    def uv_coordinates(self, point: glm.vec3) -> tuple:
+        """Compute UV coordinates for a point on the sphere."""
+        p = glm.normalize(point - self.center)
+        u = 0.5 + (math.atan2(p.z, p.x) / (2 * math.pi))
+        v = 0.5 - (math.asin(p.y) / math.pi)
+        return u, v
 
 class MetaBall(Geometry):
     def __init__(self, name: str, gtype: str, materials: list[hc.Material], samples: int, centers: list[glm.vec3], threshold: float):
@@ -176,6 +188,7 @@ class MetaBall(Geometry):
                 intersect.mat = self.materials[0] if self.materials else None
                 intersect.position = p
                 intersect.normal = glm.normalize(self.grad(p))
+                intersect.geom = self
                 return
             
 class Plane(Geometry):
@@ -199,6 +212,12 @@ class Plane(Geometry):
             intersect.position = p + t * d
             intersect.mat = None if not self.materials else \
                             self.materials[1] if len(self.materials) > 1 and (int(glm.floor(intersect.position.x)) + int(glm.floor(intersect.position.z))) & 1 == 1 else self.materials[0]
+            intersect.geom = self
+    
+    def uv_coordinates(self, point: glm.vec3) -> tuple:
+        u = (point.x % 2.0)
+        v = (point.z % 2.0)
+        return u / 2.0, v / 2.0
 
 class AABB(Geometry):
     def __init__(self, name: str, gtype: str, materials: list[hc.Material], minpos: glm.vec3, maxpos: glm.vec3, samples: int):
@@ -262,6 +281,7 @@ class AABB(Geometry):
             intersect.t = t
             intersect.position = p + t * d 
             intersect.normal = normal
+            intersect.geom = self
             if not self.materials:
                 intersect.mat
             else:
@@ -383,6 +403,7 @@ class Mesh(Geometry):
             else: 
                 intersect.normal = n
             intersect.mat = self.materials[0] if self.materials else None
+            intersect.geom = self
 
     def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
         for i in range(len(self.faces)):
@@ -407,6 +428,7 @@ class Node(Geometry):
             if intersect.t != old_t:
                 intersect.position = (self.M * glm.vec4(intersect.position, 1.0)).xyz
                 intersect.normal = glm.normalize(glm.transpose(self.Minv) * glm.vec4(intersect.normal, 0.0)).xyz
+                intersect.geom = self
                 if not intersect.mat: 
                     intersect.mat = self.materials[0]
     def sample_light(self) -> list[hc.Light]:

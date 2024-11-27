@@ -70,7 +70,7 @@ def load_scene(infile: str):
     material_by_name = {} # materials dictionary 
     for material in data["materials"]:
         mat_name = material["name"]
-        mat_diffuse = make_vec3(material["diffuse"])
+        mat_diffuse = glm.vec3(0.0) if "diffuse" not in material else make_vec3(material["diffuse"])
         mat_specular = make_vec3(material["specular"])
         mat_shininess = 0 if "shininess" not in material else material["shininess"]
         reflection_intensity = 0 if "reflection_intensity" not in material else material["reflection_intensity"]
@@ -79,7 +79,8 @@ def load_scene(infile: str):
         power = 1 if "power" not in material else material["power"]
         refractive_index = 1 if "refractive_index" not in material else material["refractive_index"]
         refraction_intensity = 0 if "refraction_intensity" not in material else material["refraction_intensity"]
-        material_by_name[mat_name] = hc.Material(mat_name, mat_diffuse, mat_specular, mat_shininess, reflection_intensity, emissive_color, power, attenuation, refractive_index, refraction_intensity)
+        texture_map = None if "texture" not in material else hc.Texture('textures/' + material["texture"])
+        material_by_name[mat_name] = hc.Material(mat_name, mat_diffuse, mat_specular, mat_shininess, reflection_intensity, emissive_color, power, attenuation, refractive_index, refraction_intensity, texture_map)
 
 
     # load geometires
