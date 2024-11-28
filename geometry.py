@@ -197,6 +197,17 @@ class Plane(Geometry):
         self.point = point
         self.normal = normal
 
+        arbitrary_vec = glm.vec3(1, 0, 0) if abs(self.normal.x) < 0.999 else glm.vec3(0, 1, 0)
+        # Project the arbitrary vector onto the plane
+        v_plane = arbitrary_vec - glm.dot(arbitrary_vec, self.normal) * self.normal
+
+        # Normalize the projected vector to ensure unit length
+        v1 = self.normal
+        v2 = glm.normalize(v_plane)
+        v3 = glm.cross(v1, v2)
+
+        self.inv_mat = glm.inverse(glm.mat3(v1, v2, v3))
+
     def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
         p = ray.origin
         d = ray.direction
@@ -215,9 +226,10 @@ class Plane(Geometry):
             intersect.geom = self
     
     def uv_coordinates(self, point: glm.vec3) -> tuple:
-        u = (point.x % 4.0)
-        v = (point.z % 4.0)
-        return u / 4.0, v / 4.0
+        transformed_point = self.inv_mat * point
+        u = transformed_point.y
+        v = transformed_point.z
+        return u, v
 
 class AABB(Geometry):
     def __init__(self, name: str, gtype: str, materials: list[hc.Material], minpos: glm.vec3, maxpos: glm.vec3, samples: int):
@@ -465,3 +477,5 @@ class MovingGeometry(Geometry):
         if old_t != intersect.t:
             intersect.position = intersect.position + current_translation
             intersect.geom = self
+    def uv_coordinates(self, point: glm.vec3) -> tuple:
+        return self.geom.uv_coordinates(point)

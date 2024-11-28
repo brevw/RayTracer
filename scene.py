@@ -146,7 +146,7 @@ class Scene:
         u, v = None, None
         if mat.texture:
             u, v = intersection.geom.uv_coordinates(intersection.position)
-            base_color = mat.texture.sample(u, v)
+            base_color = mat.texture.sample(u * mat.texture.u_scale, v * mat.texture.v_scale)
 
         # shading from light sources
         color_sub += self.ambient * base_color

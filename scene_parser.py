@@ -83,7 +83,9 @@ def load_scene(infile: str):
         power = 1 if "power" not in material else material["power"]
         refractive_index = 1 if "refractive_index" not in material else material["refractive_index"]
         refraction_intensity = 0 if "refraction_intensity" not in material else material["refraction_intensity"]
-        texture_map = None if "texture" not in material else hc.Texture('textures/' + material["texture"])
+        u_scale = 1.0 if "u_scale" not in material else material["u_scale"]
+        v_scale = 1.0 if "v_scale" not in material else material["v_scale"]
+        texture_map = None if "texture" not in material else hc.Texture('textures/' + material["texture"], u_scale, v_scale)
         material_by_name[mat_name] = hc.Material(mat_name, mat_diffuse, mat_specular, mat_shininess, reflection_intensity, emissive_color, power, attenuation, refractive_index, refraction_intensity, texture_map)
 
 

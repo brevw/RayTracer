@@ -2,10 +2,12 @@ import glm
 from PIL import Image
 
 class Texture:
-    def __init__(self, image_path) -> None:
+    def __init__(self, image_path, u_scale, v_scale) -> None:
         self.image = Image.open(image_path)
         self.width, self.height = self.image.size
         self.pixels = self.image.load()
+        self.u_scale = u_scale 
+        self.v_scale = v_scale 
     
     def sample(self, u, v):
         x = int(u * self.width) % self.width
