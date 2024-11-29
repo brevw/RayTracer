@@ -1,28 +1,36 @@
-# 261237854 - Ahmed Tlili
+## Ray Tracer
+# Render Exmaple
+![Alt text](out/FinalRender.png)
 
-Extra things implemented with the format: extension (respective file)
+# requirements 
+```python
+pip install -r requirements.txt
+```
+# Usage
+commands are run through CLI and scenes are described with a json file that will be parsed later on into objects.
 
-- Mirror Reflections: (Reflection.png, AreaLightReflection.png)
-    > "reflection_intensity" is added to each material.
-- Refractions: (Refraction.png)
-    > "refractive_index", "refraction_intensity" are added to each material.
-- Motion Blur (MotionBlur.png)
-    > Each scene now has a start and end time and geometry can move through start translation and end translation with start time of the movement and end time. "start_translation", "end_translation", "time_start", "time_end" for the geormetry were added.
-- Depth of field (DOF.png)
-    > every scene will now have "aperture_size" and "focal_distance" params.
-- Area Light (AreaLight.png)
-    > for every intersection compute lighting by randomly sampling over the surface.
-    "emissive_color", "power", "attenuation" were added to every material object for emissive objects and "samples" for geometry indicating how much to sample over the surface.
-- Quadrics (Quadrics.png)
-    > new geometry class created.
-- MetaBalls (MetaBall.png)
-    > use of path tracing with numerical. New class created.
-- Textures (Texture.json)
-    > Texture class created in the helper file that is used to sample color with u and v scale. Now texture can reference a texture.
-- Phong-Shading ()
-    > can be activated by setting USE_PHONG_SHADING to true in the geometry file 
+```
+usage: main.py [-h] -i INFILE [INFILE ...] [-o OUTDIR] [-s] [-f FACTOR]
 
+options:
+  -h, --help            show this help message and exit
+  -i INFILE [INFILE ...], --infile INFILE [INFILE ...]
+                        Name of json file that will define the scene
+  -o OUTDIR, --outdir OUTDIR
+                        directory for output files
+  -s, --show            Show the final image in a window
+  -f FACTOR, --factor FACTOR
+                        Scale factor for resolution
+```
 
 
-# Novel Scene and Competition Image
-261237854-AhmedTlili-competition.json tried to use most of the features implemented
+# Features implemented
+- Mirror Reflections
+- Refractions
+- Motion Blur
+- Depth of field 
+- Area Light
+- Quadrics
+- MetaBalls
+- Textures
+- Phong-Shading
