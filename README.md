@@ -1,5 +1,8 @@
 ## Ray Tracer
 # Render Exmaple
+```python
+python main.py -i scenes/FinalRender.json
+```
 ![Alt text](out/FinalRender.png)
 
 # requirements 
